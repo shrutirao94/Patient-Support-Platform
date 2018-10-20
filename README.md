@@ -1,4 +1,4 @@
-# Patient-Support-Platform
+# Patient-Support-Platform for Protocol Validation
 
 The assignment is inspired by medical scanning machines developed at Philips Medical
 Systems. A novel system at Philips is a Movable Patient Support Platform, MPSP for short,
