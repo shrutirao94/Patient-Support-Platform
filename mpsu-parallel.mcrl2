@@ -1,0 +1,105 @@
+sort
+    Modes = struct Normal | Emergency;
+    Motor2Status = struct moveLeft | moveRight | stopped2;
+    Motor1Status = struct moveUp | moveDown | stopped1;
+    Inputs = struct pressStop | pressResume | pressUndock |
+                    pressReset | pressUp | pressDown;
+    Operations = struct opInEmg | opInNorm | opUndock | opUp1 | opUp2 |
+                        opDown1 | opDown2 | opCalibrate | opUnCalibrate;
+    Feedbacks = struct fdDocked | fdRightMost | fdLeftMost | fdTopMost |
+                       fdBottomMost;
+
+
+act
+    read1, send2, read2, com2: Inputs;
+    send3, read3, com3: Operations;
+    send4, read4, com4: Feedbacks;
+    motor2Left, motor2Right, motor2Off, applyBreak2, releaseBreak2;
+    motor1Up, motor1Down, motor1Off, applyBreak1, releaseBreak1;
+    atRightMost, atLeftMost, atTopMost, atBottomMost;
+    isDocked, unlockDock;
+
+proc
+    Console
+		= sum input:Inputs. read1(input).send2(input).Console;
+
+    Sensor(mode:Modes, docked, calibrated, rightMost, leftMost, topMost,
+            bottomMost:Bool, m1s:Motor1Status, m2s:Motor2Status)
+        = sum input:Inputs. read2(input).
+    		((mode == Normal && docked && input == pressStop)
+                -> send3(opInEmg).Sensor(mode = Emergency, m2s = stopped2)
+    		+ (mode == Emergency && docked && input == pressResume)
+                -> send3(opInNorm).Sensor(mode = Normal)
+            + (docked && input == pressUndock && rightMost)
+                -> send3(opUndock).Sensor(docked = false)
+            + (docked && mode == Normal && !calibrated && input == pressReset)
+                -> send3(opCalibrate).Sensor(calibrated = true)
+    		+ (!docked && mode == Normal && input == pressReset)
+                -> send3(opUnCalibrate).Sensor(calibrated = false)
+            + (mode == Normal && docked && calibrated && m2s!=moveLeft &&
+                    !leftMost)
+                -> send3(opUp1).Sensor(rightMost = false, m2s = moveLeft)
+            + (mode == Normal && !calibrated && m1s!=moveUp && !topMost)
+                -> send3(opUp2).Sensor(rightMost = true, bottomMost = false,
+                m1s = moveUp)
+            + (mode == Normal && docked && calibrated && m2s!=moveRight &&
+            !rightMost)
+               -> send3(opDown1).Sensor(leftMost = false, m2s = moveRight)
+            + (mode == Normal && !calibrated && m1s!=moveDown && !bottomMost)
+               -> send3(opDown2).Sensor(topMost = false, m1s = moveDown)
+    		<> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
+                        bottomMost, m1s, m2s))
+
+        + sum input:Feedbacks. read4(input).
+            ((input == fdDocked)
+                -> Sensor(docked = true)
+            + (input == fdRightMost)
+                -> Sensor(rightMost = true)
+            + (input == fdLeftMost)
+                -> Sensor(leftMost = true)
+            + (input == fdTopMost)
+                -> Sensor(topMost = true)
+            + (input == fdBottomMost)
+                -> Sensor(bottomMost = true)
+            <> Sensor(mode, docked, calibrated, rightMost, leftMost, topMost,
+                        bottomMost, m1s, m2s));
+
+    Hardware
+        = sum input:Operations. read3(input).
+            ((input == opInEmg)
+	            -> releaseBreak2.motor2Off.Hardware
+            + (input == opInNorm)
+                -> applyBreak2.Hardware
+            + (input == opUndock)
+                -> applyBreak2.unlockDock.Hardware
+            + (input == opCalibrate)
+                -> motor1Off.applyBreak1.Hardware
+            + (input == opUnCalibrate)
+                -> releaseBreak1.Hardware
+            + (input == opUp1)
+                -> releaseBreak2.motor2Left.Hardware
+            + (input == opUp2)
+                -> releaseBreak1.motor1Up.Hardware
+            + (input == opDown1)
+                -> releaseBreak2.motor2Right.Hardware
+            + (input == opDown2)
+                -> releaseBreak1.motor1Down.Hardware
+			<> Hardware)
+
+        + isDocked.send4(fdDocked)
+        + atRightMost.motor2Off.applyBreak2.send4(fdRightMost)
+        + atLeftMost.motor2Off.applyBreak2.send4(fdLeftMost)
+        + atTopMost.motor1Off.applyBreak1.send4(fdTopMost)
+        + atBottomMost.motor1Off.applyBreak1.send4(fdBottomMost);
+
+init
+    allow({read1, com2, com3, com4},
+    comm({
+        send2|read2 -> com2,
+        send3|read3 -> com3,
+        send4|read4 -> com4},
+        Console
+        || Sensor(Normal, true, true, false, false, false, false,
+                    stopped1, stopped2)
+        || Hardware
+    ));
