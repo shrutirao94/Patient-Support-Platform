@@ -4,23 +4,23 @@ The assignment is inspired by medical scanning machines developed at Philips Med
 Systems. A novel system at Philips is a Movable Patient Support Platform, MPSP for short,
 which is a trolley bed on which a patient can lie inside a scanner.
 
-![alt text](Patient-Support-Platform/images/console.png)
-
+## Specifications
+![](https://github.com/shrutirao94/Patient-Support-Platform/blob/master/images/pss.png)
 The MPSP can be either disconnected from the scanner or docked, i.e. connected to the
-scanner. Since the MPSP can be disconnected from the scanner, a patient can be prepared in
-a separate room, while another patient is being scanned. Previously patients were prepared
-while in or near the scanner, and during this time the scanner must be idle.
-There are two motors in the MPSP. Motor M1 controls the vertical and motor M2
-controls the horizontal movement, see Figure 1. Both motors have brakes that can be
-turned on and off separately from the motors. Horizontal movement is only allowed when
+scanner. There are two motors in the MPSP. Motor M1 controls the vertical and motor M2
+controls the horizontal movement. Both motors have brakes that can be turned on and off
+separately from the motors. Horizontal movement is only allowed when
 the MPSP is docked. When the MPSP is disconnected from the scanner, the bed must
 always be in the rightmost position (which is detected by a detector), as otherwise the
 MPSP might tumble over. When disconnected from the scanner, the horizontal brake must
 always be applied. The vertical brake must always be applied while the vertical motor is
 off. When a motor is on, the corresponding brake must not be used, as otherwise the motor
 could overheat.
+
+
 The movements are controlled via a console on the MPSP, which is designed to be as
-simple as possible, see Figure 2.
+simple as possible:
+![](https://github.com/shrutirao94/Patient-Support-Platform/blob/master/images/console.png)
 The stop button puts the MPSP in emergency mode. In emergency mode, the horizontal
 brake must be released, to allow medical staff to manually drag the patient outside the
 scanner. This may be useful when an emergency occurs (a heart-attack while scanning), or
@@ -55,9 +55,6 @@ down buttons can only be used to move the bed up and down. The bed is not allowe
 move above some uppermost and below some lowermost position. There are two detectors,
 to detect when the bed is in the uppermost or lowermost position.
 
-The assignment is to design a set of controllers that must operate the MPSP in such a
-way that no harm can ever be done to a patient or to the equipment. It is a strict requirement
-that at least three separate controllers are used: one for inputs from the console, one for
-inputs from the sensors, and one for outputs to the motors and the brakes. Of course these
-three controllers need to communicate with each other. You can assume that channels are
-secure (i.e., no messages are lost). 
+![](https://github.com/shrutirao94/Patient-Support-Platform/blob/master/images/system-architecture.png)
+
+Three controllers are created: Console, Hardware and Sensor that manage communications between each other. 
